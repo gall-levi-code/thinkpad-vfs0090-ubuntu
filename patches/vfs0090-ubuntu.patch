@@ -1,0 +1,66 @@
+diff --git a/meson.build b/meson.build
+index 54a7ca4..ba7b5d5 100644
+--- a/meson.build
++++ b/meson.build
+@@ -25,6 +25,7 @@ shared_module('fprint-tod-vfs009x',
+         'vfs0090.c',
+     ],
+     dependencies: vfs009x_deps + vfs0090_deps,
++    c_args: ['-DHAVE_PIXMAN=1'],
+     install: true,
+     install_dir: libfprint_tod_dep.get_pkgconfig_variable('tod_driversdir')
+ )
+diff --git a/vfs0090.c b/vfs0090.c
+index 8034faf..0f0ce05 100644
+--- a/vfs0090.c
++++ b/vfs0090.c
+@@ -1629,7 +1629,7 @@ led_blink_callback_with_ssm (FpiUsbTransfer *transfer, FpDevice *dev,
+ 
+   if (!error)
+     {
+-      fpi_ssm_next_state_delayed (ssm, 200, NULL);
++      fpi_ssm_next_state_delayed (ssm, 200);
+     }
+   else
+     {
+@@ -2106,6 +2106,7 @@ minutiae_detected (GObject *source_object, GAsyncResult *res, gpointer user_data
+                                         "Minutiae detection failed, please retry");
+     }
+ 
++  fp_dbg ("Capture diagnostics: image %ux%u, extracted minutiae %u", image->width, image->height, image->minutiae ? image->minutiae->len : 0);
+   vdev->match_result = FPI_MATCH_SUCCESS;
+   action = fpi_device_get_current_action (dev);
+ 
+@@ -2251,6 +2252,14 @@ finger_image_submit (FpDevice         *dev,
+   minutiae_data->dev = dev;
+   minutiae_data->download_ssm = download_ssm;
+ 
++  {
++    guint lo = 255, hi = 0;
++    guint64 sum = 0;
++    for (guint i = 0; i < img->width * img->height; i++) {
++      lo = MIN (lo, img->data[i]); hi = MAX (hi, img->data[i]); sum += img->data[i];
++    }
++    fp_dbg ("Capture diagnostics: pixels min %u max %u mean %.2f", lo, hi, (double) sum / (img->width * img->height));
++  }
+   fp_dbg ("Detecting minutiae");
+   fp_image_detect_minutiae (img,
+                             vdev->cancellable,
+@@ -2951,7 +2960,7 @@ reactivate_ssm (FpiSsm *ssm, FpDevice *dev)
+   switch (fpi_ssm_get_cur_state (ssm))
+     {
+     case REACTIVATE_STATE_WAIT:
+-      fpi_ssm_next_state_delayed (ssm, 100, NULL);
++      fpi_ssm_next_state_delayed (ssm, 100);
+       break;
+ 
+     case REACTIVATE_STATE_DEACTIVATE:
+@@ -3143,7 +3152,7 @@ fpi_device_vfs0090_class_init (FpiDeviceVfs0090Class *klass)
+   dev_class->type = FP_DEVICE_TYPE_USB;
+   dev_class->id_table = id_table;
+   dev_class->scan_type = FP_SCAN_TYPE_PRESS;
+-  dev_class->nr_enroll_stages = 5;
++  dev_class->nr_enroll_stages = 10;
+   dev_class->probe = dev_probe;
+ 
+   dev_class->open = dev_open;
