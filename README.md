@@ -2,7 +2,7 @@
 
 Enable fingerprint authentication for the **Validity `138a:0090`** reader on **Ubuntu 24.04 LTS, amd64**.
 
-Validated on a ThinkPad X1 Carbon 4th Gen: enrollment, three consecutive verification matches, screen unlocking, and password fallback. Reboot persistence has not yet been confirmed. Other readers and Ubuntu versions are outside this guide's tested scope.
+Validated on a ThinkPad X1 Carbon 4th Gen: enrollment, three consecutive verification matches, screen unlocking, and password fallback. Fingerprint authentication after reboot and suspend/resume was subsequently confirmed on the same laptop. Other readers and Ubuntu versions are outside this guide's tested scope.
 
 The individual setup steps worked on that laptop. The combined installer is newly assembled from those steps and has not been tested end-to-end on a second machine.
 
@@ -53,7 +53,7 @@ sudo bash install.sh enable-login
 
 Lock the screen and test fingerprint unlocking and password fallback. Then reboot and test again. Fingerprint authentication can also affect other PAM consumers, such as `sudo`; it does not replace your password or unlock encrypted disks.
 
-## What makes this setup work?
+## Required components of the working setup
 
 - Patched `python-validity` initializes the sensor, then is removed from the active setup.
 - Standard Ubuntu `fprintd` handles authentication through a custom VFS0090 TOD driver.
@@ -70,6 +70,8 @@ No precompiled binary, fingerprint template, image, machine ID, or enrollment da
 - [Initialization patch #294](https://github.com/uunicorn/python-validity/pull/294), vendored in `patches/python-validity-294.patch`.
 - [VFS0090 TOD driver](https://github.com/rabbitambulance-ra/libfprint-tod-vfs0090), pinned to `6084a1545589beec0c741200b18b0902cca225ba`.
 - Local driver changes are in `patches/vfs0090-ubuntu.patch`.
+
+All changes listed above are required components of this setup, not optional troubleshooting workarounds.
 
 The custom driver is installed outside APT's package tracking. A future libfprint update may require rebuilding it. Source and packaged initialization versions may change; the installer stops if its initialization patch no longer applies.
 
